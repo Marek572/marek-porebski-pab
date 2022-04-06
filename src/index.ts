@@ -8,6 +8,27 @@ app.use(express.json())
 
 const secret = 'topSecret'
 
+async function readStorage(): Promise<void> {
+  try {
+    notes = JSON.parse(await fs.promises.readFile("./src/notes.json", 'utf-8'))
+    tags = JSON.parse(await fs.promises.readFile("./src/tags.json", 'utf-8'))
+    users = JSON.parse(await fs.promises.readFile("./src/users.json", 'utf-8'))
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+async function updateStorage(): Promise<void> {
+  try {
+    await fs.promises.writeFile("./src/notes.json", JSON.stringify(notes))
+    await fs.promises.writeFile("./src/tags.json", JSON.stringify(tags))
+    await fs.promises.writeFile("./src/users.json", JSON.stringify(users))
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+readStorage()
 ////////////////////////////////Notes////////////////////////////////
 interface Note {
   id?: number
@@ -41,7 +62,7 @@ app.post('/note', function (req: Request, res: Response) {
 
   //NEW NOTE REQUEST
   const data = new Date().toISOString()
-  const id = req.body.id == null ? Date.now() : req.body.id
+  const id = req.body.id == undefined ? Date.now() : req.body.id
   const newNote: Note = {
     id: id,
     user: payload,
@@ -51,27 +72,40 @@ app.post('/note', function (req: Request, res: Response) {
     tags: req.body.tags
   }
 
+  //if true => user authorized to:
+  if (payload !== undefined) {
 
-  //if new tag/tags in notes->tags
-  const noteTags = req.body.tags as Tag[]
-  noteTags.forEach(element => {
-    if (!tags.find(tag => tag.name === element.name)) {
-      const tagId = element.id == null ? Date.now() : element.id
-      const newTag: Tag = {
-        id: tagId,
-        name: element.name.toLowerCase()
+    const noteTags = req.body.tags as Tag[]
+
+    //if new tag/tags in notes-> add to tags
+    noteTags.forEach(element => {
+      if (!tags.find(tag => tag.name === element.name)) {
+        const tagId = element.id == undefined ? Date.now() : element.id
+        const newTag: Tag = {
+          id: tagId,
+          name: element.name.toLowerCase()
+        }
+        tags.push(newTag)
+        updateStorage()
       }
-      tags.push(newTag)
-    }
-  });
+    });
 
-  //if true => create new note + add to notes[]
-  if (newNote.title !== null && newNote.content !== null && payload !== undefined) {
-    notes.push(newNote);
-    res.send(newNote) //sendStatus(201)
-  } else {
-    res.send("no title or content") //sendStatus(400)
-  }
+    //if title & content exists...
+    if (newNote.title !== undefined && newNote.content !== undefined) {
+
+      //if there is no note with that id -> add to notes[]
+      if (!notes.find(note => note.id === newNote.id)) {
+        notes.push(newNote)
+        updateStorage()
+        res.send(newNote) //sendStatus(201)
+      } else
+        res.send("note with that id already exists")
+
+    } else
+      res.send("no title or content") //sendStatus(400)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //GET single
@@ -83,12 +117,18 @@ app.get('/note/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => show single note
-  if (notes.find(note => note.id == id) !== undefined && payload !== undefined) {
-    res.send(notes.find(note => note.id == id)) //sendStatus(200)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if note with that id exists => show single note
+    if (notes.find(note => note.id == id) !== undefined)
+      res.send(notes.find(note => note.id == id)) //sendStatus(200)
+    else
+    res.send("note with that id dont exists")
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //GET all
@@ -99,11 +139,17 @@ app.get('/notes', function (req: Request, res: Response) {
   const token = authData?.split(' ')[1] ?? ""
   const payload = jwt.verify(token, secret)
 
-  //if true => show notes[]
-  if (notes != null && payload !== undefined)
-    res.send(notes)
-  else
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if notes exists in notes[] => show notes[]
+    if (notes !== undefined)
+      res.send(notes)
+    else
     res.send("notes are empty") //sendStatus(400)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //PUT
@@ -115,13 +161,19 @@ app.put('/note/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => edit specific note
-  if (notes.find(note => note.id == id) !== undefined && payload !== undefined) {
-    notes[notes.findIndex(note => note.id == id)] = req.body;
-    res.send(notes.find(note => note.id == id)) //sendStatus(200)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if note with that id exists => edit specific note
+    if (notes.find(note => note.id == id) !== undefined) {
+      notes[notes.findIndex(note => note.id == id)] = req.body;
+      res.send(req.body) //sendStatus(200)
+    } else
+      res.send("note with that id dont exists") //sendStatus(404)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //DELETE
@@ -133,13 +185,19 @@ app.delete('/note/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => delete specific note
-  if (notes.find(note => note.id == id) !== undefined && payload !== undefined) {
-    res.send(notes.find(note => note.id == id))
-    notes.splice(notes.findIndex(note => note.id == id), 1)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if note with that id exists => delete specific note
+    if (notes.find(note => note.id == id) !== undefined) {
+      res.send(notes.find(note => note.id == id))
+      notes.splice(notes.findIndex(note => note.id == id), 1)
+    } else
+      res.send("note with that id dont exists") //sendStatus(404)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 
@@ -165,19 +223,31 @@ app.post('/tag', function (req: Request, res: Response) {
   const token = authData?.split(' ')[1] ?? ""
   const payload = jwt.verify(token, secret)
 
-  const id = req.body.id == null ? Date.now() : req.body.id
+  const id = req.body.id == undefined ? Date.now() : req.body.id
   const newTag: Tag = {
     id: id,
     name: req.body.name
   }
 
-  //if true => create new tag
-  if (newTag.name !== null && !tags.find(tag => tag.name === newTag.name) && payload !== undefined) {
-    tags.push(newTag);
-    res.send(tags.find(tag => tag.id == id)) //sendStatus(201)
-  } else {
-    res.send("no name or tag already exists") //sendStatus(400)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if tag have a name => create new tag
+    if (newTag.name !== undefined) {
+
+      //if there is no tag with that id -> add to tags[]
+      if (!tags.find(tag => tag.name === newTag.name)) {
+        tags.push(newTag)
+        updateStorage()
+        res.send(tags.find(tag => tag.id == id)) //sendStatus(201)
+      }
+
+    } else
+      res.send("your tag dont have name") //sendStatus(400)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //GET single
@@ -189,12 +259,18 @@ app.get('/tag/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => show sign tag
-  if (tags.find(tag => tag.id == id) !== undefined && payload !== undefined) {
-    res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if tag with that id exists => show single tag
+    if (tags.find(tag => tag.id == id) !== undefined)
+      res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
+    else
+      res.send("tag with that id dont exists") //sendStatus(404)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //GET all
@@ -205,11 +281,17 @@ app.get('/tags', function (req: Request, res: Response) {
   const token = authData?.split(' ')[1] ?? ""
   const payload = jwt.verify(token, secret)
 
-  //if true => show tags[]
-  if (tags != null)
-    res.send(tags) //sendStatus(200)
-  else
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    ////if tags exists in tags[] => show tags[]
+    if (tags != undefined)
+      res.send(tags) //sendStatus(200)
+    else
     res.send("tags are empty") //sendStatus(400)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //PUT
@@ -221,13 +303,19 @@ app.put('/tag/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => edit specific tag
-  if (tags.find(tag => tag.id == id) !== undefined && payload !== undefined) {
-    tags[tags.findIndex(tag => tag.id == id)] = req.body;
-    res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if note with that id exists => edit specific tag
+    if (tags.find(tag => tag.id == id) !== undefined) {
+      tags[tags.findIndex(tag => tag.id == id)] = req.body;
+      res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
+    } else
+      res.send("tag with that id dont exists") //sendStatus(404)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 //DELETE
@@ -239,37 +327,68 @@ app.delete('/tag/:id', function (req: Request, res: Response) {
   const payload = jwt.verify(token, secret)
 
   const id = +req.params.id
-  //if true => delete specific tag
-  if (tags.find(tag => tag.id == id) !== undefined) {
-    res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
-    notes.splice(tags.findIndex(tag => tag.id == id), 1)
-  } else {
-    res.send("no object") //sendStatus(404)
-  }
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    //if note with that id exists => delete specific tag
+    if (tags.find(tag => tag.id == id) !== undefined) {
+      res.send(tags.find(tag => tag.id == id)) //sendStatus(200)
+      notes.splice(tags.findIndex(tag => tag.id == id), 1)
+    } else
+      res.send("tag with that id dont exists") //sendStatus(404)
+
+  } else
+    res.sendStatus(401) //unauthorized
 })
 
 
-////////////////////////////////Login////////////////////////////////
+////////////////////////////////Users////////////////////////////////
 
 interface User {
   login: string,
-  password: string
+  password: string,
+  token: string
 }
+
+let users: User[] = [
+  {
+    login: "testLogin",
+    password: "testPassword",
+    token: "testToken"
+  }
+]
 
 //POST
 app.post('/login', function (req: Request, res: Response) {
+
+  const token = jwt.sign(req.body.login, secret)
+
   const newUser: User = {
     login: req.body.login,
-    password: req.body.password
+    password: req.body.password,
+    token: token
   }
 
-  const token = jwt.sign(newUser.login, secret)
-
+  //if true => user authorized to:
   if (token !== undefined) {
-    res.send(token)// res.sendStatus(200)
-  } else {
+
+    //if user have a login and password...
+    if (newUser.login !== undefined && newUser.password !== undefined) {
+
+      //if there is no user with that login -> add to users[]
+      if(!users.find(user => user.login === newUser.login))
+      {
+        users.push(newUser)
+        updateStorage()
+        res.sendStatus(200)
+      }else
+      res.send("user with that login already exists")
+
+    }
+
+  } else
     res.sendStatus(401)
-  }
 })
 
 app.listen(3001)

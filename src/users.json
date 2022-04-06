@@ -1,0 +1,12 @@
+[
+    {
+        "login": "testLogin",
+        "password": "testPassword",
+        "token": "testToken"
+    },
+    {
+        "login": "ben123",
+        "password": "abc",
+        "token": "eyJhbGciOiJIUzI1NiJ9.YmVuMTIz.xAc-nK-PzjYwORLKYlvH9IN4iFH0fuW99edw11HWN2M"
+    }
+]
