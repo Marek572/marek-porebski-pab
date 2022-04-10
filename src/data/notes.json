@@ -1,0 +1,52 @@
+[
+    {
+        "id": 1,
+        "user": "testUser",
+        "title": "test",
+        "content": "this is a test note",
+        "createDate": "rndDate",
+        "visibility": true,
+        "tags": [
+            {
+                "id": 1,
+                "name": "tag1"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "user": "testLogin",
+        "title": "test",
+        "content": "test",
+        "createDate": "2022-04-10T17:02:23.422Z",
+        "visibility": true,
+        "tags": [
+            {
+                "id": 1,
+                "name": "tag1"
+            },
+            {
+                "id": 2,
+                "name": "tag2"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "user": "testUser",
+        "title": "123",
+        "content": "321",
+        "createDate": "2022-04-10T19:37:00.075Z",
+        "visibility": false,
+        "tags": [
+            {
+                "id": 1,
+                "name": "tag1"
+            },
+            {
+                "id": 2,
+                "name": "tag2"
+            }
+        ]
+    }
+]

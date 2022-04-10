@@ -3,6 +3,8 @@ import { Request, Response } from 'express'
 import fs from 'fs'
 import jwt from 'jsonwebtoken'
 
+// import notesRouter from './routes/notes'
+
 const app = express()
 app.use(express.json())
 
@@ -10,9 +12,9 @@ const secret = 'topSecret'
 
 async function readStorage(): Promise<void> {
   try {
-    notes = JSON.parse(await fs.promises.readFile("./src/notes.json", 'utf-8'))
-    tags = JSON.parse(await fs.promises.readFile("./src/tags.json", 'utf-8'))
-    users = JSON.parse(await fs.promises.readFile("./src/users.json", 'utf-8'))
+    notes = JSON.parse(await fs.promises.readFile("./src/data/notes.json", 'utf-8'))
+    tags = JSON.parse(await fs.promises.readFile("./src/data/tags.json", 'utf-8'))
+    users = JSON.parse(await fs.promises.readFile("./src/data/users.json", 'utf-8'))
   } catch (err) {
     console.log(err)
   }
@@ -20,22 +22,30 @@ async function readStorage(): Promise<void> {
 
 async function updateStorage(): Promise<void> {
   try {
-    await fs.promises.writeFile("./src/notes.json", JSON.stringify(notes))
-    await fs.promises.writeFile("./src/tags.json", JSON.stringify(tags))
-    await fs.promises.writeFile("./src/users.json", JSON.stringify(users))
+    await fs.promises.writeFile("./src/data/notes.json", JSON.stringify(notes))
+    await fs.promises.writeFile("./src/data/tags.json", JSON.stringify(tags))
+    await fs.promises.writeFile("./src/data/users.json", JSON.stringify(users))
   } catch (err) {
     console.log(err)
   }
 }
 
 readStorage()
+
+
+//TEST
+// app.use('/users', notesRouter)
+
+
+
 ////////////////////////////////Notes////////////////////////////////
-interface Note {
+export interface Note {
   id?: number
   user: any
   title: string
   content: string
   createDate: string
+  visibility: boolean
   tags?: Tag[]
 }
 
@@ -46,8 +56,9 @@ let notes: Note[] = [
     title: "test",
     content: "this is a test note",
     createDate: "rndDate",
+    visibility: true,
     tags: [
-      { id: 1, name: "test name" }
+      { id: 1, name: "tag1" }
     ]
   }
 ]
@@ -69,6 +80,7 @@ app.post('/note', function (req: Request, res: Response) {
     title: req.body.title,
     content: req.body.content,
     createDate: data,
+    visibility: req.body.visibility,
     tags: req.body.tags
   }
 
@@ -123,9 +135,9 @@ app.get('/note/:id', function (req: Request, res: Response) {
 
     //if note with that id exists => show single note
     if (notes.find(note => note.id == id) !== undefined)
-      res.send(notes.find(note => note.id == id)) //sendStatus(200)
+      res.send(notes.find(note => note.id == id) ) //sendStatus(200)
     else
-    res.send("note with that id dont exists")
+      res.send("note with that id dont exists")
 
   } else
     res.sendStatus(401) //unauthorized
@@ -146,11 +158,36 @@ app.get('/notes', function (req: Request, res: Response) {
     if (notes !== undefined)
       res.send(notes)
     else
-    res.send("notes are empty") //sendStatus(400)
+      res.send("notes are empty") //sendStatus(400)
 
   } else
     res.sendStatus(401) //unauthorized
 })
+
+app.get('/notes/user/:userName', function (req, res) {
+
+  //AUTHORIZATION
+  const authData = req.headers.authorization
+  const token = authData?.split(' ')[1] ?? ""
+  const payload = jwt.verify(token, secret)
+
+  const user = req.params.userName
+
+  //if true => user authorized to:
+  if (payload !== undefined) {
+
+    const userNotes = []
+    for(var i = 0; i < notes.length; i++){
+      if(notes[i].user == user && notes[i].visibility == true)
+        userNotes.push(notes[i])
+    }
+    res.send(userNotes)
+
+  } else
+    res.sendStatus(401) //unauthorized
+
+})
+
 
 //PUT
 app.put('/note/:id', function (req: Request, res: Response) {
@@ -203,7 +240,7 @@ app.delete('/note/:id', function (req: Request, res: Response) {
 
 ////////////////////////////////Tags////////////////////////////////
 
-interface Tag {
+export interface Tag {
   id?: number
   name: string;
 }
@@ -211,7 +248,7 @@ interface Tag {
 let tags: Tag[] = [
   {
     id: 1,
-    name: "test name"
+    name: "testTag"
   }
 ]
 
@@ -288,7 +325,7 @@ app.get('/tags', function (req: Request, res: Response) {
     if (tags != undefined)
       res.send(tags) //sendStatus(200)
     else
-    res.send("tags are empty") //sendStatus(400)
+      res.send("tags are empty") //sendStatus(400)
 
   } else
     res.sendStatus(401) //unauthorized
@@ -345,7 +382,7 @@ app.delete('/tag/:id', function (req: Request, res: Response) {
 
 ////////////////////////////////Users////////////////////////////////
 
-interface User {
+export interface User {
   login: string,
   password: string,
   token: string
@@ -353,9 +390,9 @@ interface User {
 
 let users: User[] = [
   {
-    login: "testLogin",
+    login: "testUser",
     password: "testPassword",
-    token: "testToken"
+    token: "eyJhbGciOiJIUzI1NiJ9.dGVzdExvZ2lu.8s9Jwp9TBbtZlVzENc3uOra_MkywHWdzsN8VsX_RWO0"
   }
 ]
 
@@ -377,13 +414,12 @@ app.post('/login', function (req: Request, res: Response) {
     if (newUser.login !== undefined && newUser.password !== undefined) {
 
       //if there is no user with that login -> add to users[]
-      if(!users.find(user => user.login === newUser.login))
-      {
+      if (!users.find(user => user.login === newUser.login)) {
         users.push(newUser)
         updateStorage()
         res.sendStatus(200)
-      }else
-      res.send("user with that login already exists")
+      } else
+        res.send("user with that login already exists")
 
     }
 
