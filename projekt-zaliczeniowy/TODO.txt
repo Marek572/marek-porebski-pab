@@ -1,0 +1,74 @@
+projekt checklisty gier
+
+===FUNKCJONALNOSCI===
+1. CRUD gry - dodawane do listy przez administratorow
+2. CRUD gatunek - dodawane do listy przez administratorow
+3. CRUD producent - dodawane do listy przez administratorow
+4. CRUD wydawca - dodawane do listy przez administratorow
+5. rejerstracja i logowanie - dodanie uzytkownika do bazy, info o aktualnie zalogowanym uzytkowniku
+6. CRUD lista gier ktore uzytkownik juz zagral (public/private)
+7. CRUD lista gier ktore uzytkownik ma w planie zagrac (public/private)
+8. CRUD uzytkownicy (zwykly/administrator)
+9. zalogowany user moze wyswietlic liste wszystkich gier, gatunkow, producentow, wydawcow z bazy
+10. zalogowany user nie moze wyswietlic list innych uzytkownikow jesli nie sa publiczne
+
+
+===MODELE===
+gra
+    >id
+    >tytul
+    >gatunek
+    >producent
+    >wydawca
+    >data wydania
+
+gatunek
+    >id
+    >nazwa
+
+producent
+    >id
+    >nazwa
+    >zalozyciel?
+
+wydawca
+    >id
+    >nazwa
+
+uzytkownik
+    >username
+    >haslo
+
+listy
+    >username
+    >typ (beaten/planned)
+    >[tablica gier]
+
+===ENDPOINTY===
+games
+    /games - lista gier
+    /games/:title - szuka gry o takim tytule
+    +game CRUD
+    /games/genre/:name - lista gier o danym gatunku
+    /games/developer/:name - lista gier od danego producenta
+
+genres CRUD
+    /genres - lista gatunkow
+
+developer CRUD
+    /developers - lista producentow
+
+publisher CRUD
+    /publishers - lista wydawcow
+
+user/users
+    /users - lista uzytkownikow (dostepna tylko dla administratorow)
+    /user/register - rejerstracja uzytkownika
+    /user/login - logowanie sie
+
+list
+    /list/beaten/:username - wyswietla liste gier w ktore user juz zagral
+    +CRUD
+    /list/planned/:username - wyswietla liste gier w ktore user ma w planie zagrac
+    +CRUD
+????/lists/:username - wyswietla obie listy, gier w ktore user juz zagral i gier w ktore ma w planie zagrac
