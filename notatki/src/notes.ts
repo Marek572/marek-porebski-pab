@@ -124,12 +124,9 @@ router.put('/note/:id', (req, res) => {
 
     const id = +req.params.id
 
-
-    console.log(notes.find(note => note.id == id))
-
     //if note with that id exists => edit specific note
     if (notes.find(note => note.id == id) !== undefined) {
-        notes[id] = req.body;
+        notes[id] = req.body
         updateStorage()
         res.send(req.body) //sendStatus(200)
     } else

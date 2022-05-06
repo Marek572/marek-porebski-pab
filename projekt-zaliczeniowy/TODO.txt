@@ -1,6 +1,6 @@
 projekt checklisty gier
 
-===FUNKCJONALNOSCI===
+================================FUNKCJONALNOSCI================================
 1. CRUD gry - dodawane do listy przez administratorow
 2. CRUD gatunek - dodawane do listy przez administratorow
 3. CRUD producent - dodawane do listy przez administratorow
@@ -13,7 +13,7 @@ projekt checklisty gier
 10. zalogowany user nie moze wyswietlic list innych uzytkownikow jesli nie sa publiczne
 
 
-===MODELE===
+================================MODELE================================
 gra
     >id
     >tytul
@@ -41,34 +41,374 @@ uzytkownik
 
 listy
     >username
-    >typ (beaten/planned)
-    >[tablica gier]
+    >visable
+    >beaten
+    >planned
 
-===ENDPOINTY===
-games
-    /games - lista gier
-    /games/:title - szuka gry o takim tytule
-    +game CRUD
-    /games/genre/:name - lista gier o danym gatunku
-    /games/developer/:name - lista gier od danego producenta
+================================ENDPOINTY================================
+games CRUD
+    x/games - lista gier
 
+    [
+        {
+            "id": number,
+            "title": "string",
+            "genre": [string],
+            "developer": "string",
+            "publisher": "string",
+            "releseDate": date
+        },
+        {
+            "id": number,
+            "title": "string",
+            "genre": [string],
+            "developer": "string",
+            "publisher": "string",
+            "releseDate": date
+        }
+    ]
+
+
+    x/games/game - CRUD
+
+    {
+        "id": number,
+        "title": "string",
+        "genre": [string],
+        "developer": "string",
+        "publisher": "string",
+        "releseDate": date
+    }
+
+
+    x/games/game/title/:title - zwraca gre o takim tytule
+
+    {
+        "id": number,
+        "title": "string" (:title),
+        "genre": [string],
+        "developer": "string",
+        "publisher": "string",
+        "releseDate": date
+    }
+
+
+    x/games/genre/:name - lista gier o danym gatunku
+
+    {
+        "id": number,
+        "title": "string",
+        "genre": [string] (:name),
+        "developer": "string",
+        "publisher": "string",
+        "releseDate": date
+    }
+
+
+    x/games/developer/:name - lista gier od danego producenta
+
+    {
+        "id": number,
+        "title": "string",
+        "genre": [string],
+        "developer": "string" (:name),
+        "publisher": "string",
+        "releseDate": date
+    }
+
+----------------------------------------------------------------
 genres CRUD
-    /genres - lista gatunkow
+    x/genres - lista gatunkow
 
+    [
+        {
+            "id": number,
+            "name": "string"
+        },
+        {
+            "id": number,
+            "name": "string"
+        }
+    ]
+
+
+    x/genres/genre - CRUD
+
+    {
+        "id": number,
+        "name": "string"
+    }
+
+----------------------------------------------------------------
 developer CRUD
-    /developers - lista producentow
+    x/developers - lista producentow
 
+    [
+        {
+            "id": number,
+            "name": "string",
+            "owner": "string"
+        },
+        {
+            "id": number,
+            "name": "string",
+            "owner": "string"
+        }
+    ]
+
+
+    x/developers/developer - CRUD
+
+    {
+        "id": number,
+        "name": "string",
+        "owner": "string"
+    }
+
+----------------------------------------------------------------
 publisher CRUD
-    /publishers - lista wydawcow
+    x/publishers - lista wydawcow
 
-user/users
+    [
+        {
+            "id": number,
+            "name": "string"
+        },
+        {
+            "id": number,
+            "name": "string"
+        }
+    ]
+
+
+    x/publishers/publisher - CRUD
+
+    {
+        "id": number,
+        "name": "string"
+    }
+
+----------------------------------------------------------------
+users
     /users - lista uzytkownikow (dostepna tylko dla administratorow)
+
+    [
+        {
+            "username": "string",
+            "password": "string"
+        },
+        {
+            "username": "string",
+            "password": "string"
+        }
+    ]
+
+
     /user/register - rejerstracja uzytkownika
+
+    {
+        "username": "string",
+        "password": "string"
+    }
+
+
     /user/login - logowanie sie
 
-list
-    /list/beaten/:username - wyswietla liste gier w ktore user juz zagral
-    +CRUD
-    /list/planned/:username - wyswietla liste gier w ktore user ma w planie zagrac
-    +CRUD
-????/lists/:username - wyswietla obie listy, gier w ktore user juz zagral i gier w ktore ma w planie zagrac
+    "zalogowano "+username
+
+----------------------------------------------------------------
+collections
+    /collections - wyswietla obie list wszystkich userow
+
+    [
+        {
+            "username": "string",
+            "visable": boolean
+            "beaten": [
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                },
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                }
+            ],
+            "planned": [
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                },
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                }
+            ]
+        },
+        {
+            "username": "string",
+            "visable": boolean
+            "beaten": [
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                },
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                }
+            ],
+            "planned": [
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                },
+                {
+                    "id": number,
+                    "title": "string",
+                    "genre": [string],
+                    "developer": "string",
+                    "publisher": "string",
+                    "releseDate": date
+                }
+            ]
+        }
+    ]
+
+
+    x/collection/user/:username - wyswietla wszystkie listy danego usera
+
+    {
+        "username": "string",
+        "visable": boolean,
+        "beaten": [
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            },
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            }
+        ],
+        "planned": [
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            },
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            }
+        ]
+    }
+
+    /lists/beaten/:username - wyswietla liste gier w ktore user juz zagral
+
+    {
+        "username": "string",
+        "beaten": [
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            },
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            }
+        ]
+    }
+
+    /lists/planned/:username - wyswietla liste gier w ktore user ma w planie zagrac
+
+    {
+        "username": "string",
+        "planned": [
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            },
+            {
+                "id": number,
+                "title": "string",
+                "genre": [string],
+                "developer": "string",
+                "publisher": "string",
+                "releseDate": date
+            }
+        ]
+    }
+
+================================Modules================================
+npm install typescript, express, nodemon, ts-node, @types/node, @types/express
+
+================================Future Ideas==============================
+na teraz:
+>dodawanie paru gier, gatunkow...
+
+na kiedys:
+>game model +achivements +timespent
+>wyszukiwanie gry o podobnym tytule (/games/game/title/:title; for loop po kazdej literze?)
+================================TODOs & FIXMEs================================
+FIXME:sprawdzic warunek przy tworzeniu nowej gry, gatunku ect... (newDeveloper !== undefined), bo cos sie jebie xd
+FIXME: unique values
+
+
+
+
