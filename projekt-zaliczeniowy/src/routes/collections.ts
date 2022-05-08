@@ -1,9 +1,11 @@
 const express = require('express')
 const router = express.Router()
-import { readStorage, updateStorage, collections} from './storage'
+import { readStorage, updateStorage, collections} from '../storage'
+import { verifyUser } from '../verifyToken'
 import {Game} from './games'
 
 router.use((req, res, next) => {
+    verifyUser(req,res,next)
     next()
 })
 
