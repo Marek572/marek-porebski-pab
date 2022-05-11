@@ -8,10 +8,10 @@ export function verifyUser (req,res,next) {
 
     try {
         const verified = jwt.verify(token, 'superTopSecret')
-        req.user = verified
-        console.log(token)
+        res.locals.verified = verified
+        //console.log(token)
         next()
     }catch(err) {
-        res.status(400).send('Invalid token')
+        return res.status(400).send('Invalid token')
     }
 }

@@ -9,9 +9,9 @@ router.post('/register', async (req, res) => {
 
     //validation
     const {error} = registerValidation(req.body)
-    //FIXME: CRASH on error "TSerr: converting circular structure to json"
+    //FIXME: nie wystepuje nagle? CRASH on error "TSerr: converting circular structure to json"
     if(error)
-        return res.status(400).send(res.send(error.details[0].message))
+        return res.status(400).send(error.details[0].message)
 
     //user data
     const {username, email, password} = req.body
@@ -70,10 +70,11 @@ router.post('/login', async (req, res) => {
     // const token = jwt.sign(user.username, process.env.TOKEN_SECRET)
     const token = jwt.sign({username}, 'superTopSecret', {expiresIn: '24h'})
     //FIXME: token into header
-    res.setHeader('Authorization', token).send(token)
+    res.setHeader('Authorization', token)
+    console.log(token)
 
     //output
-    // res.status(202).send('Logged in')
+    res.status(202).send('Logged in')
 })
 
 
