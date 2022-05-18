@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     if (allDevelopers.length > 0)
         return res.send(allDevelopers)
     else
-        return res.status(404).send("developer list is empty")
+        return res.status(404).send("Developer list is empty")
 
 })
 
@@ -34,16 +34,19 @@ router.get('/developer/:id', async (req, res) => {
     if (idDeveloper)
         return res.send(idDeveloper)
     else
-        return res.status(404).send("developer with id " + id + " not found")
+        return res.status(404).send("Developer with id " + id + " not found")
 
 })
 
-
-//FIXME: post,put,delete require admin privileges
 //TODO: POST add few developers
 
-//POST add game
+//POST add developer
 router.post('/developer', async (req, res) => {
+
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
 
     //validation
     const { error } = developerValidation(req.body)
@@ -57,10 +60,10 @@ router.post('/developer', async (req, res) => {
         founder: founder
     })
 
-    //check if developer exsist
+    //check if developer exsists
     const developer = await DeveloperModel.findOne({ devName: devName })
     if (developer)
-        return res.status(400).send("developer with name " + devName + " already exist")
+        return res.status(400).send("Developer with name " + devName + " already exist")
 
     //save developer
     try {
@@ -72,18 +75,23 @@ router.post('/developer', async (req, res) => {
 
 })
 
-//PUT edit specific game
+//PUT edit specific developer
 router.put('/developer/:id', async (req, res) => {
+
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
 
     //find developer
     const id = req.params.id
     let idDeveloper = await DeveloperModel.findOne({ _id: id })
 
-    //check if game exist
+    //check if developer exists
     if (!idDeveloper)
-        return res.status(404).send("developer with id " + id + " does not exist")
+        return res.status(404).send("Developer with id " + id + " does not exist")
 
-    //update game
+    //update developer
     try {
         const updateDeveloper = await DeveloperModel.updateOne({ _id: id }, req.body)
         return res.send("You edited developer with id " + id)
@@ -96,13 +104,18 @@ router.put('/developer/:id', async (req, res) => {
 //DELETE delete specific game
 router.delete('/developer/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find developer
     const id = req.params.id
     let idDeveloper = await DeveloperModel.findOne({ _id: id })
 
-    //check if developer exist
+    //check if developer exists
     if (!idDeveloper)
-        return res.status(404).send("developer with id " + id + " does not exist")
+        return res.status(404).send("Developer with id " + id + " does not exist")
 
     //delete developer
     try {
@@ -117,5 +130,4 @@ router.delete('/developer/:id', async (req, res) => {
 export default router
 
 //NOTES:
-//FIXME: zastanowic sie czy na pewno szukac wszystkiego po id a nie po nazwach
 //FIXME: toLowerCase() przy zapisie (raczej storage.ts przy JSON.stringify, CHYBA)?

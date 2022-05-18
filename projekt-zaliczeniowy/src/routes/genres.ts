@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     if (allGenres.length > 0)
         return res.send(allGenres)
     else
-        return res.status(404).send("genre list is empty")
+        return res.status(404).send("Genre list is empty")
 
 })
 
@@ -34,16 +34,19 @@ router.get('/genre/:id', async (req, res) => {
     if (idGenre)
         return res.send(idGenre)
     else
-        return res.status(404).send("genre with id " + id + " not found")
+        return res.status(404).send("Genre with id " + id + " not found")
 
 })
 
-
-//FIXME: post,put,delete require admin privileges
 //TODO: POST add few genres
 
 //POST add single genre
 router.post('/genre', async (req, res) => {
+
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
 
     //validation
     const { error } = genreValidation(req.body)
@@ -59,7 +62,7 @@ router.post('/genre', async (req, res) => {
     //check if genre exsist
     const genre = await GenreModel.findOne({ genName: genName })
     if (genre)
-        return res.status(400).send("genre with name " + genName + " already exist")
+        return res.status(400).send("Genre with name " + genName + " already exist")
 
     //save game
     try {
@@ -74,13 +77,18 @@ router.post('/genre', async (req, res) => {
 //PUT edit specific genre
 router.put('/genre/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find genre
     const id = req.params.id
     let idGenre = await GenreModel.findOne({ _id: id })
 
     //check if genre exsist
     if (!idGenre)
-        return res.status(404).send("genre with id " + id + " does not exist")
+        return res.status(404).send("Genre with id " + id + " does not exist")
 
     //update game
     try {
@@ -95,13 +103,18 @@ router.put('/genre/:id', async (req, res) => {
 //DELETE delete specific game
 router.delete('/genre/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find genre
     const id = req.params.id
     let idGenre = await GenreModel.findOne({ _id: id })
 
     //check if genre exsist
     if (!idGenre)
-        return res.status(404).send("genre with id " + id + " does not exist")
+        return res.status(404).send("Genre with id " + id + " does not exist")
 
     //delete genre
     try {

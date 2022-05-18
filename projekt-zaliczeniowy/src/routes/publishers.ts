@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     if (allPublishers.length > 0)
         return res.send(allPublishers)
     else
-        return res.status(404).send("publisher list is empty")
+        return res.status(404).send("Publisher list is empty")
 
 })
 
@@ -34,16 +34,19 @@ router.get('/publisher/:id', async (req, res) => {
     if (idPublisher)
         return res.send(idPublisher)
     else
-        return res.status(404).send("publisher with id " + id + " not found")
+        return res.status(404).send("Publisher with id " + id + " not found")
 
 })
 
-
-//FIXME: post,put,delete require admin privileges
 //TODO: POST add few publishers
 
 //POST add publisher
 router.post('/publisher', async (req, res) => {
+
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
 
     //validation
     const { error } = publisherValidation(req.body)
@@ -59,7 +62,7 @@ router.post('/publisher', async (req, res) => {
     //check if publisher exsist
     const publisher = await PublisherModel.findOne({ pubName: pubName })
     if (publisher)
-        return res.status(400).send("publisher with name " + pubName + " already exist")
+        return res.status(400).send("Publisher with name " + pubName + " already exist")
 
     //save publisher
     try {
@@ -74,13 +77,18 @@ router.post('/publisher', async (req, res) => {
 //PUT edit specific publisher
 router.put('/publisher/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find publisher
     const id = req.params.id
     const idPublisher = await PublisherModel.findOne({ _id: id })
 
     //check if publisher exist
     if (!idPublisher)
-        return res.status(404).send("publisher with id " + id + " does not exist")
+        return res.status(404).send("Publisher with id " + id + " does not exist")
 
     //update publisher
     try {
@@ -95,13 +103,18 @@ router.put('/publisher/:id', async (req, res) => {
 //DELETE delete specific game
 router.delete('/publisher/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find publisher
     const id = req.params.id
     const idPublisher = await PublisherModel.findOne({ _id: id })
 
     //check if publisher exist
     if (!idPublisher)
-        return res.status(404).send("publisher with id " + id + " does not exist")
+        return res.status(404).send("Publisher with id " + id + " does not exist")
 
     //delete publisher
     try {

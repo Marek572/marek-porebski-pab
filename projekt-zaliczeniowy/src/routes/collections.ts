@@ -5,45 +5,48 @@ import { collectionValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
-    verifyUser(req,res,next)
+    verifyUser(req, res, next)
 })
 
 
 //GET all collections
 router.get('/', async (req, res) => {
 
-    const user = res.locals.verified.username
-    if(user === 'admin'){
-        //find collections
-        const allCollections = await CollectionModel.find()
-
-        //output
-        if(allCollections.length>0)
-            return res.send(allCollections);
-        else
-            return res.status(404).send('collections is empty')
-    }else{
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
         return res.status(403).send('Access denied')
-    }
+
+    //find all collections
+    const allCollections = await CollectionModel.find()
+
+    //output
+    if (allCollections.length > 0)
+        return res.send(allCollections);
+    else
+        return res.status(404).send('Collections is empty')
 
 })
 
-//GET single public collection
-router.get('/collection/:username', async (req, res) =>{
+//GET single (public) collection
+router.get('/collection/:username', async (req, res) => {
+
+    const currentUser = res.locals.verified.username
 
     //find user collection
     const username = req.params.username
-    const userCollection = await CollectionModel.findOne({username: username})
-    console.log(userCollection)
-
-    //TODO: if admin privileges => skip checking if visable
+    const userCollection = await CollectionModel.findOne({ username: username })
 
     //output
-    if(userCollection)
-        if(userCollection.visible === true)
+    if (currentUser === 'admin')
+            return res.send(userCollection)
+
+    if (userCollection) {
+        if (userCollection.visible === true)
             return res.send(userCollection)
         else
-            return res.status(404).send(username+" have private collection") //FIXME: not siur czy status 404
+            return res.status(404).send(username + " have private collection") //FIXME: not siur czy status 404
+    }
     else
         return res.status(404).send(username + " collection not found")
 
@@ -52,33 +55,39 @@ router.get('/collection/:username', async (req, res) =>{
 //GET current user collection
 router.get('/collection', async (req, res) => {
 
-    //find user collection
+    //find currentUser collection
     const currentUser = res.locals.verified.username
-    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
 
     //output
-    if(currentUserCollection)
+    if (currentUserCollection)
         return res.send(currentUserCollection)
     else
-        return res.status(404).send('something went wrong')
+        return res.status(404).send('Something went wrong')
 
 })
-
 
 //PUT edit visability
 router.put('/colletion', async (req, res) => {
 
-    //find user collection
+    //find currentUser collection
     const currentUser = res.locals.verified.username
-    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
+
+    let visability = currentUserCollection.visible
 
     //output
-    if(currentUserCollection){
-        currentUserCollection.visible = true
-        return res.send("You edited viability of your collection")
+    if (currentUserCollection) {
+        if (visability === true) {
+            visability = false
+            return res.send("Your collection is now private")
+        } else {
+            visability = true
+            return res.send("Your collection is now public")
+        }
     }
     else
-        return res.status(400).send("You can only edit your collection") //FIXME: nwm jaki status, czy dobry send?
+        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
 
 })
 
@@ -87,34 +96,35 @@ router.put('/colletion', async (req, res) => {
 //POST add beaten game
 router.post('/collection/beaten', async (req, res) => {
 
-    //find user collection
+    //find currentUser collection
     const currentUser = res.locals.verified.username
-    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
 
     //output
-    if(currentUserCollection){
+    if (currentUserCollection) {
 
+        //beaten game data
         const newItem = req.body.beaten
         let beatenGames = currentUserCollection.beaten
 
         //check if already beaten
         const checkBeaten = beatenGames.includes(newItem)
-        if(checkBeaten)
+        if (checkBeaten)
             return res.status(400).send('You already beaten that game')
 
-        //push game to array
+        //push game beaten
         beatenGames.push(newItem)
 
         //save beaten
-        try{
+        try {
             const saveBeaten = await currentUserCollection.save()
-            return res.send('You added new beaten game: '+newItem)
-        }catch(err){
+            return res.send('You added new beaten game: ' + newItem)
+        } catch (err) {
             return res.status(400).send(err)
         }
 
-    }else
-        return res.status(400).send("You can only add games to your collection") //FIXME: nwm jaki status, czy dobry send?
+    } else
+        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
 
 
 })
@@ -122,36 +132,113 @@ router.post('/collection/beaten', async (req, res) => {
 //POST add planned game
 router.post('/collection/planned', async (req, res) => {
 
-    //find user collection
+    //find currentUser collection
     const currentUser = res.locals.verified.username
-    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
 
     //output
-    if(currentUserCollection){
+    if (currentUserCollection) {
 
+        //planned game data
         const newItem = req.body.planned
         let plannedGames = currentUserCollection.planned
 
         //check if already planned
         const checkPlanned = plannedGames.includes(newItem)
-        if(checkPlanned)
+        if (checkPlanned)
             return res.status(400).send('You already planned that game')
 
-        //push geme to array
+        //push game to planned
         plannedGames.push(newItem)
 
         //save planned
-        try{
+        try {
             const savePlanned = await currentUserCollection.save()
-            return res.send('You added new planned game: '+newItem)
-        }catch(err){
+            return res.send('You added new planned game: ' + newItem)
+        } catch (err) {
             return res.status(400).send(err)
         }
 
-    }else
-        return res.status(400).send("You can only add games to your collection") //FIXME: nwm jaki status, czy dobry send?
+    } else
+        return res.status(404).send('Something went wrong')//FIXME: nwm jaki status
+
+
+})
+
+//DELETE beaten game
+router.delete('/collection/beaten', async (req, res) => {
+
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
+
+    //output
+    if (currentUserCollection) {
+
+        //beaten game data
+        const delItem = req.body.beaten
+        let beatenGames = currentUserCollection.beaten
+
+        //check if already planned
+        const checkBeaten = beatenGames.includes(delItem)
+        if (!checkBeaten)
+            return res.status(400).send('Beaten games does not contain: ' + delItem)
+
+        //delate game from beaten
+        const index = beatenGames.indexOf(delItem)
+        beatenGames.splice(index, 1)
+
+        //save beaten
+        try {
+            const deleteBeaten = await currentUserCollection.save()
+            return res.send('You deleted beaten game: ' + delItem)
+        } catch (err) {
+            return res.status(400).send(err)
+        }
+
+    } else
+        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
+
+
+})
+
+//DELETE planned game
+router.delete('/collection/planned', async (req, res) => {
+
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser })
+
+    //output
+    if (currentUserCollection) {
+
+        const delItem = req.body.planned
+        let plannedGames = currentUserCollection.planned
+
+        //check if already planned
+        const checkPlanned = plannedGames.includes(delItem)
+        if (!checkPlanned)
+            return res.status(400).send('Beaten games does not contain game: ' + delItem)
+
+        //delate game from planned
+        const index = plannedGames.indexOf(delItem)
+        plannedGames.splice(index, 1)
+
+        //save planned
+        try {
+            const deletePlanned = await currentUserCollection.save()
+            return res.send('You deleted beaten game: ' + delItem)
+        } catch (err) {
+            return res.status(400).send(err)
+        }
+
+    } else
+        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
 
 
 })
 
 export default router
+
+//NOTES
+//FIXME: VALIDATION

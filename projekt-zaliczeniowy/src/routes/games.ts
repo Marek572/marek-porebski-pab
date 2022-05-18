@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     if (allGames.length > 0)
         return res.send(allGames)
     else
-        return res.status(404).send("game list is empty")
+        return res.status(404).send("Game list is empty")
 
 })
 
@@ -35,7 +35,7 @@ router.get('/genre/:genreName', async (req, res) => {
     if (genreGames.length > 0)
         return res.send(genreGames)
     else
-        return res.status(404).send("games with genre " + genre + " not found")
+        return res.status(404).send("Games with genre " + genre + " not found")
 })
 
 //GET all games from specific developer
@@ -50,7 +50,7 @@ router.get('/developer/:devName', async (req, res) => {
     if (devGames.length > 0)
         return res.send(devGames)
     else
-        return res.status(404).send("this developer have no games")
+        return res.status(404).send("This developer have no games")
 
 })
 
@@ -65,7 +65,7 @@ router.get('/game/:id', async (req, res) => {
     if (idGame)
         return res.send(idGame)
     else
-        return res.status(404).send("game with id " + id + " not found")
+        return res.status(404).send("Game with id " + id + " not found")
 
 })
 
@@ -81,16 +81,19 @@ router.get('/game/title/:title', async (req, res) => {
     if (game)
         return res.send(game)
     else
-        return res.status(404).send("game with title " + titleSpace + " not found")
+        return res.status(404).send("Game with title " + titleSpace + " not found")
 
 })
 
-
-// //FIXME: post,put,delete require admin privileges
 // //TODO: POST add few games
 
 //POST add game
 router.post('/game', async (req, res) => {
+
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
 
     //validation
     const { error } = gameValidation(req.body)
@@ -127,13 +130,18 @@ router.post('/game', async (req, res) => {
 //PUT edit specific game
 router.put('/game/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find game
     const id = req.params.id
     let idGame = await GameModel.findOne({ _id: id })
 
     //check if game exist
     if (!idGame)
-        return res.status(404).send("game with id " + id + " does not exist")
+        return res.status(404).send("Game with id " + id + " does not exist")
 
     //update game
     try {
@@ -148,13 +156,18 @@ router.put('/game/:id', async (req, res) => {
 //DELETE delete specific game
 router.delete('/game/:id', async (req, res) => {
 
+    //check if currentUser is admin
+    const currentUser = res.locals.verified.username
+    if (currentUser !== 'admin')
+        return res.status(403).send('Access denied')
+
     //find all game
     const id = req.params.id
     let idGame = await GameModel.findOne({ _id: id })
 
     //check if game exist
     if (!idGame)
-        return res.status(404).send("game with id " + id + " does not exist")
+        return res.status(404).send("Game with id " + id + " does not exist")
 
     //delete game
     try {
