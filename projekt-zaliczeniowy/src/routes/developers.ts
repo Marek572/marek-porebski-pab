@@ -1,42 +1,40 @@
 const express = require('express')
 const router = express.Router()
-import { readStorage, updateStorage, developers} from '../storage'
+const DeveloperModel = require('../models/DeveloperModel')
+import { developerValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
-    verifyUser(req,res,next)
-    next()
+    verifyUser(req, res, next)
 })
 
-export interface Developer {
-    id?: number,
-    devName: string
-    founder?: string
-}
-
-readStorage()
 
 //GET all developers
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+
+    //find developers
+    const allDevelopers = await DeveloperModel.find()
 
     //output
-    if(developers.length>0)
-        res.status(200).send(developers)
+    if (allDevelopers.length > 0)
+        return res.send(allDevelopers)
     else
-        res.status(404).send("developer list is empty")
+        return res.status(404).send("developer list is empty")
 
 })
 
 //GET single developer by id
-router.get('/developer/:id', (req, res) =>{
+router.get('/developer/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find game
+    const id = req.params.id
+    const idDeveloper = await DeveloperModel.findOne({ _id: id })
 
     //output
-    if(developers.find(developer => developer.id ==id) !== undefined)
-        res.status(200).send(developers.find(developer => developer.id))
+    if (idDeveloper)
+        return res.send(idDeveloper)
     else
-        res.status(404).send("developer with id " + id + " not found")
+        return res.status(404).send("developer with id " + id + " not found")
 
 })
 
@@ -45,59 +43,74 @@ router.get('/developer/:id', (req, res) =>{
 //TODO: POST add few developers
 
 //POST add game
-router.post('/developer', (req, res) => {
+router.post('/developer', async (req, res) => {
 
-    const id = req.body.id == undefined ? Date.now() : req.body.id
-    const newDeveloper: Developer = {
-        id: id,
-        devName: req.body.devName,
-        founder: req.body.founder
-    }
+    //validation
+    const { error } = developerValidation(req.body)
+    if (error)
+        return res.status(400).send(error.details[0].message)
 
-    //output
-    if(newDeveloper !== undefined){
-        if(!developers.find(developer => developer.id === newDeveloper.id)){
-            developers.push(newDeveloper)
-            updateStorage()
-            res.status(201).send("You added new developer: " + newDeveloper.devName)
-        }
-        else
-            res.status(400).send("developer with id " + id + " already exist")
+    //new developer
+    const { devName, founder } = req.body
+    const newDeveloper = new DeveloperModel({
+        devName: devName,
+        founder: founder
+    })
+
+    //check if developer exsist
+    const developer = await DeveloperModel.findOne({ devName: devName })
+    if (developer)
+        return res.status(400).send("developer with name " + devName + " already exist")
+
+    //save developer
+    try {
+        const saveDeveloper = await newDeveloper.save()
+        return res.status(201).send("You added new developer: " + saveDeveloper.devName)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(400).send("wrong construction of newDeveloper")
 
 })
 
 //PUT edit specific game
-router.put('/developer/:id', (req, res) => {
+router.put('/developer/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find developer
+    const id = req.params.id
+    let idDeveloper = await DeveloperModel.findOne({ _id: id })
 
-    //output
-    if(developers.find(developer => developer.id == id) !== undefined){
-        developers[id] = req.body
-        updateStorage()
-        res.status(200).send("You edited developer with id " + id)
+    //check if game exist
+    if (!idDeveloper)
+        return res.status(404).send("developer with id " + id + " does not exist")
+
+    //update game
+    try {
+        const updateDeveloper = await DeveloperModel.updateOne({ _id: id }, req.body)
+        return res.send("You edited developer with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("developer with id " + id + " does not exist")
 
 })
 
 //DELETE delete specific game
-router.delete('/developer/:id', (req, res) => {
+router.delete('/developer/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find developer
+    const id = req.params.id
+    let idDeveloper = await DeveloperModel.findOne({ _id: id })
 
-    //output
-    if(developers.find(developer => developer.id == id) !== undefined){
-        res.status(200).send("You deleted developer with id " + id)
-        developers.splice(developers.findIndex(developer => developer.id == id), 1)
-        updateStorage()
+    //check if developer exist
+    if (!idDeveloper)
+        return res.status(404).send("developer with id " + id + " does not exist")
+
+    //delete developer
+    try {
+        const deleteDeveloper = await DeveloperModel.deleteOne({ _id: id })
+        return res.send("You deleted developer with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("developer with id " + id + " does not exist")
 
 })
 

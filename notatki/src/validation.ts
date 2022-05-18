@@ -79,9 +79,12 @@ export const collectionValidation = (body) => {
         username: Joi.string()
             .required(),
         visable: Joi.string()
+            .required()
             .default(false),
-        beaten: Joi.array(),
+        beaten: Joi.array()
+            .true(),
         planned: Joi.array()
+            .true()
     })
 
     return schema.validate(body)

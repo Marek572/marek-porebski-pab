@@ -401,13 +401,14 @@ npm install typescript, express, nodemon, ts-node, @types/node, @types/express
 ================================Future Ideas==============================
 na teraz:
 >dodawanie paru gier, gatunkow...
+>sprawdzanie czy gra nie jest juz planowana/zagrana (przy zagranych/planowanych)
+>check if undefined przy dodawaniu zagranych/planowanych gier
 
 na kiedys:
 >game model +achivements +timespent
 >wyszukiwanie gry o podobnym tytule (/games/game/title/:title; for loop po kazdej literze?)
+>komentarze do gier (opinie czy cos tego typu)
 ================================TODOs & FIXMEs================================
-FIXME:sprawdzic warunek przy tworzeniu nowej gry, gatunku ect... (newDeveloper !== undefined), bo cos sie jebie xd
-FIXME: unique values
 
 
 

@@ -1,86 +1,157 @@
 const express = require('express')
 const router = express.Router()
-import { readStorage, updateStorage, collections} from '../storage'
+const CollectionModel = require('../models/CollectionModel')
+import { collectionValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
-import {Game} from './games'
 
 router.use((req, res, next) => {
     verifyUser(req,res,next)
-    next()
 })
 
-export interface Collection {
-    username: string,
-    visible: boolean,
-    beaten: Game[],
-    planned: Game[]
-}
 
+//GET all collections
+router.get('/', async (req, res) => {
 
-router.get('/', (req, res) => {
+    const user = res.locals.verified.username
+    if(user === 'admin'){
+        //find collections
+        const allCollections = await CollectionModel.find()
 
-    //TODO: require admin privileges
-
-    //output
-    if(collections.length>0)
-        res.status(200).send(collections);
-    else
-        res.status(404).send("collections is empty")
+        //output
+        if(allCollections.length>0)
+            return res.send(allCollections);
+        else
+            return res.status(404).send('collections is empty')
+    }else{
+        return res.status(403).send('Access denied')
+    }
 
 })
-
 
 //GET single public collection
-router.get('/collection/:username', (req, res) =>{
+router.get('/collection/:username', async (req, res) =>{
 
+    //find user collection
     const username = req.params.username
-    //TODO: check czy tmp dziala wg xd
-    const tmp = collections.find(collection => collection.username == username)
-
+    const userCollection = await CollectionModel.findOne({username: username})
+    console.log(userCollection)
 
     //TODO: if admin privileges => skip checking if visable
 
     //output
-    if(tmp !== undefined)
-        if(tmp.visible === true)
-            res.status(200).send(tmp)
+    if(userCollection)
+        if(userCollection.visible === true)
+            return res.send(userCollection)
         else
-            res.status(404).send(username+" have private collection") //FIXME: not siur czy status 404
+            return res.status(404).send(username+" have private collection") //FIXME: not siur czy status 404
     else
-        res.status(404).send(username + "collection not found")
+        return res.status(404).send(username + " collection not found")
 
 })
 
+//GET current user collection
+router.get('/collection', async (req, res) => {
 
-//TODO: GET current user collection
-router.get('/collection/:username', (req, res) => {
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
 
-
+    //output
+    if(currentUserCollection)
+        return res.send(currentUserCollection)
+    else
+        return res.status(404).send('something went wrong')
 
 })
 
-//Bez post'a do tworzenia, bo kolekcja tworzy sie przy rejerstracji konta
-//Bez delete'a, bo kolekcja stworzona na stale; ewentualne usuwanie przy usunieciu konta
-//TODO: tworzenie kolekcji przy rejerstracji xD^
 
 //PUT edit visability
-router.put('/colletion/:username', (req, res) => {
+router.put('/colletion', async (req, res) => {
 
-    const username = req.params.username
-    let tmp = collections.find(collection => collection.username == username)
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
 
-    //FIXME: current user edit
     //output
-    if(tmp !== undefined){
-        tmp.visible = req.body.visible
-        updateStorage()
-        res.status(200).send("You edited viability of your collection")
+    if(currentUserCollection){
+        currentUserCollection.visible = true
+        return res.send("You edited viability of your collection")
     }
     else
-        res.status(400).send("You can only edit your collection") //FIXME: nwm jaki status
+        return res.status(400).send("You can only edit your collection") //FIXME: nwm jaki status, czy dobry send?
 
 })
 
+//Bez delete'a kolekcji, bo stworzona na stale; ewentualne usuwanie przy usunieciu konta
 
-//NOTES:
-//FIXME: current user == param username
+//POST add beaten game
+router.post('/collection/beaten', async (req, res) => {
+
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+
+    //output
+    if(currentUserCollection){
+
+        const newItem = req.body.beaten
+        let beatenGames = currentUserCollection.beaten
+
+        //check if already beaten
+        const checkBeaten = beatenGames.includes(newItem)
+        if(checkBeaten)
+            return res.status(400).send('You already beaten that game')
+
+        //push game to array
+        beatenGames.push(newItem)
+
+        //save beaten
+        try{
+            const saveBeaten = await currentUserCollection.save()
+            return res.send('You added new beaten game: '+newItem)
+        }catch(err){
+            return res.status(400).send(err)
+        }
+
+    }else
+        return res.status(400).send("You can only add games to your collection") //FIXME: nwm jaki status, czy dobry send?
+
+
+})
+
+//POST add planned game
+router.post('/collection/planned', async (req, res) => {
+
+    //find user collection
+    const currentUser = res.locals.verified.username
+    const currentUserCollection = await CollectionModel.findOne({ username: currentUser})
+
+    //output
+    if(currentUserCollection){
+
+        const newItem = req.body.planned
+        let plannedGames = currentUserCollection.planned
+
+        //check if already planned
+        const checkPlanned = plannedGames.includes(newItem)
+        if(checkPlanned)
+            return res.status(400).send('You already planned that game')
+
+        //push geme to array
+        plannedGames.push(newItem)
+
+        //save planned
+        try{
+            const savePlanned = await currentUserCollection.save()
+            return res.send('You added new planned game: '+newItem)
+        }catch(err){
+            return res.status(400).send(err)
+        }
+
+    }else
+        return res.status(400).send("You can only add games to your collection") //FIXME: nwm jaki status, czy dobry send?
+
+
+})
+
+export default router

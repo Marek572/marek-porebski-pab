@@ -1,42 +1,40 @@
 const express = require('express')
 const router = express.Router()
-import { readStorage, updateStorage, genres} from '../storage'
+const GenreModel = require('../models/GenreModel')
+import { genreValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
-    verifyUser(req,res,next)
-    next()
+    verifyUser(req, res, next)
 })
 
-export interface Genre{
-    id: number,
-    genName: string
-}
-
-readStorage()
 
 //GET all genres
-router.get('/', (req,res) => {
+router.get('/', async (req, res) => {
+
+    //find genres
+    const allGenres = await GenreModel.find()
 
     //output
-    if(genres.length>0)
-        res.status(200).send(genres)
+    if (allGenres.length > 0)
+        return res.send(allGenres)
     else
-        res.status(404).send("genre list is empty")
+        return res.status(404).send("genre list is empty")
 
 })
 
 //GET single genre by id
-router.get('/genre/:id', (req, res) => {
+router.get('/genre/:id', async (req, res) => {
 
-    const id = +req.params.id
-    const tmp = genres.find(genre => genre.id == id)
+    //find genre
+    const id = req.params.id
+    const idGenre = await GenreModel.findOne({ _id: id })
 
     //output
-    if(tmp !== undefined)
-        res.status(200).send(tmp)
+    if (idGenre)
+        return res.send(idGenre)
     else
-        res.status(404).send("genre with id " + id + " not found")
+        return res.status(404).send("genre with id " + id + " not found")
 
 })
 
@@ -45,65 +43,77 @@ router.get('/genre/:id', (req, res) => {
 //TODO: POST add few genres
 
 //POST add single genre
-router.post('/genre', (req, res) => {
+router.post('/genre', async (req, res) => {
 
-    const id = req.body.id == undefined ? Date.now() : req.body.id
-    const newGenre: Genre = {
-        id: id,
-        genName: req.body.genName
-    }
+    //validation
+    const { error } = genreValidation(req.body)
+    if (error)
+        return res.status(400).send(error.details[0].message)
 
-    //output
-    if(newGenre !== undefined) {
-        if(!genres.find(genre => genre.id == newGenre.id)){
-            genres.push(newGenre)
-            updateStorage()
-            res.status(201).send("You added new genre: " + newGenre.genName)
-        }
-        else
-            res.status(400).send("genre with id " + id + " already exist")
+    //new genre
+    const { genName } = req.body
+    const newGenre = new GenreModel({
+        genName: genName
+    })
+
+    //check if genre exsist
+    const genre = await GenreModel.findOne({ genName: genName })
+    if (genre)
+        return res.status(400).send("genre with name " + genName + " already exist")
+
+    //save game
+    try {
+        const saveGenre = await newGenre.save()
+        return res.status(201).send("You added new genre: " + saveGenre.genName)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(400).send("wrong construction of newGenre")
 
 })
 
 //PUT edit specific genre
-router.put('/genre/:id', (req, res) => {
+router.put('/genre/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find genre
+    const id = req.params.id
+    let idGenre = await GenreModel.findOne({ _id: id })
 
-    console.log(genres.find(genre => genre.id == id))
+    //check if genre exsist
+    if (!idGenre)
+        return res.status(404).send("genre with id " + id + " does not exist")
 
-    //output
-    if(genres.find(genre => genre.id == id) !== undefined){
-        genres[id] = req.body
-        updateStorage()
-        res.status(200).send("You edited genre with id " + id)
+    //update game
+    try {
+        const updateGame = await GenreModel.updateOne({ _id: id }, req.body)
+        return res.send("You edited genre with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("genre with id " + id + " does not exist")
 
 })
 
 //DELETE delete specific game
-router.delete('/genre/:id', (req, res) => {
+router.delete('/genre/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find genre
+    const id = req.params.id
+    let idGenre = await GenreModel.findOne({ _id: id })
 
-    //output
-    if(genres.find(game => game.id == id) !== undefined){
-        res.status(200).send("You deleted genre with id " + id)
-        genres.splice(genres.findIndex(genre => genre.id == id), 1)
-        updateStorage()
+    //check if genre exsist
+    if (!idGenre)
+        return res.status(404).send("genre with id " + id + " does not exist")
+
+    //delete genre
+    try {
+        const deleteGenre = await GenreModel.deleteOne({ _id: id })
+        return res.send("You deleted genre with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("genre with id " + id + " does not exist")
 
 })
 
 export default router
-
 
 
 //NOTES:

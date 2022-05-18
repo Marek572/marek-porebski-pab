@@ -1,41 +1,40 @@
 const express = require('express')
 const router = express.Router()
-import { readStorage, updateStorage, publishers} from '../storage'
+const PublisherModel = require('../models/PublisherModel')
+import { publisherValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
-    verifyUser(req,res,next)
-    next()
+    verifyUser(req, res, next)
 })
 
-export interface Publisher {
-    id?: number,
-    pubName: string,
-}
-
-readStorage()
 
 //GET all publishers
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+
+    //find games
+    const allPublishers = await PublisherModel.find()
 
     //output
-    if(publishers.length>0)
-        res.status(200).send(publishers)
+    if (allPublishers.length > 0)
+        return res.send(allPublishers)
     else
-        res.status(404).send("publisher list is empty")
+        return res.status(404).send("publisher list is empty")
 
 })
 
 //GET single publisher by id
-router.get('/publisher/:id', (req, res) =>{
+router.get('/publisher/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find publisher
+    const id = req.params.id
+    const idPublisher = await PublisherModel.findOne({ _id: id })
 
     //output
-    if(publishers.find(publisher => publisher.id ==id) !== undefined)
-        res.status(200).send(publishers.find(publisher => publisher.id))
+    if (idPublisher)
+        return res.send(idPublisher)
     else
-        res.status(404).send("publisher with id " + id + " not found")
+        return res.status(404).send("publisher with id " + id + " not found")
 
 })
 
@@ -44,60 +43,73 @@ router.get('/publisher/:id', (req, res) =>{
 //TODO: POST add few publishers
 
 //POST add publisher
-router.post('/publisher', (req, res) => {
+router.post('/publisher', async (req, res) => {
 
-    const id = req.body.id == undefined ? Date.now() : req.body.id
-    const newPublisher: Publisher = {
-        id: id,
-        pubName: req.body.pubName,
+    //validation
+    const { error } = publisherValidation(req.body)
+    if (error)
+        return res.status(400).send(error.details[0].message)
+
+    //new publisher
+    const { pubName } = req.body
+    const newPublisher = new PublisherModel({
+        pubName: pubName,
+    })
+
+    //check if publisher exsist
+    const publisher = await PublisherModel.findOne({ pubName: pubName })
+    if (publisher)
+        return res.status(400).send("publisher with name " + pubName + " already exist")
+
+    //save publisher
+    try {
+        const savePublisher = await newPublisher.save()
+        return res.status(201).send("You added new publisher: " + newPublisher.pubName)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-
-    //TODO: czy potrzeba dodawania tagow przez dodawanie gry?
-
-    //output
-    if(newPublisher !== undefined){
-        if(!publishers.find(publisher => publisher.id === newPublisher.id)){
-            publishers.push(newPublisher)
-            updateStorage()
-            res.status(201).send("You added new publisher: " + newPublisher.pubName)
-        }
-        else
-            res.status(400).send("publisher with id " + id + " already exist")
-    }
-    else
-        res.status(400).send("wrong construction of newPublisher")
 
 })
 
 //PUT edit specific publisher
-router.put('/publisher/:id', (req, res) => {
+router.put('/publisher/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find publisher
+    const id = req.params.id
+    const idPublisher = await PublisherModel.findOne({ _id: id })
 
-    //output
-    if(publishers.find(publisher => publisher.id == id) !== undefined){
-        publishers[id] = req.body
-        updateStorage()
-        res.status(200).send("You edited publisher with id " + id)
+    //check if publisher exist
+    if (!idPublisher)
+        return res.status(404).send("publisher with id " + id + " does not exist")
+
+    //update publisher
+    try {
+        const updatePublisher = await PublisherModel.updateOne({ _id: id }, req.body)
+        return res.send("You edited publisher with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("publisher with id " + id + " does not exist")
 
 })
 
 //DELETE delete specific game
-router.delete('/publisher/:id', (req, res) => {
+router.delete('/publisher/:id', async (req, res) => {
 
-    const id = +req.params.id
+    //find publisher
+    const id = req.params.id
+    const idPublisher = await PublisherModel.findOne({ _id: id })
 
-    //output
-    if(publishers.find(publisher => publisher.id == id) !== undefined){
-        res.status(200).send("You deleted publisher with id " + id)
-        publishers.splice(publishers.findIndex(publisher => publisher.id == id), 1)
-        updateStorage()
+    //check if publisher exist
+    if (!idPublisher)
+        return res.status(404).send("publisher with id " + id + " does not exist")
+
+    //delete publisher
+    try {
+        const deletePublisher = await PublisherModel.deleteOne({ _id: id })
+        return res.send("You deleted publisher with id " + id)
+    } catch (err) {
+        return res.status(400).send(err)
     }
-    else
-        res.status(404).send("publisher with id " + id + " does not exist")
 
 })
 

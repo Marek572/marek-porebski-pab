@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const UserModel = require('../models/UserModel')
+const CollectionModel = require('../models/CollectionModel')
 import {registerValidation, loginValidation} from '../validation'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
@@ -35,10 +36,16 @@ router.post('/register', async (req, res) => {
         email: email,
         password: hashPass
     })
+    const newCollection = new CollectionModel({
+        username: username,
+        beaten: [],
+        planned: []
+    })
 
     //save user
     try{
         const saveUser = await newUser.save()
+        const saveCollection = await newCollection.save()
         res.status(201).send('user '+saveUser.username+' successfully registered')
     }catch(err){
         res.status(400).send(err)
@@ -66,11 +73,9 @@ router.post('/login', async (req, res) => {
         return res.status(400).send('Invalid password')
 
     //token
-    //FIXME: ENV
-    // const token = jwt.sign(user.username, process.env.TOKEN_SECRET)
-    const token = jwt.sign({username}, 'superTopSecret', {expiresIn: '24h'})
+    const token = jwt.sign({username}, process.env.TOKEN_SECRET, {expiresIn: '24h'})
     //FIXME: token into header
-    res.setHeader('Authorization', token)
+    // res.setHeader('Authorization', token)
     console.log(token)
 
     //output
@@ -80,11 +85,8 @@ router.post('/login', async (req, res) => {
 
 router.put('/logout',  async (req, res) => {
 
-    const token = req.headers.authorization?.split(' ')[1]
-
-    //FIXME: set token expiresIn 1000
-
-    res.status(200).send('Logged out')
+    res.status(404).send('err')
+    // res.send('Logged out')
 
 })
 
