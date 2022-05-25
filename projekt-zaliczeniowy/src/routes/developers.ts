@@ -56,8 +56,8 @@ router.post('/developer', async (req, res) => {
     //new developer
     const { devName, founder } = req.body
     const newDeveloper = new DeveloperModel({
-        devName: devName,
-        founder: founder
+        devName: devName.toLowerCase(),
+        founder: founder.toLowerCase()
     })
 
     //check if developer exsists
@@ -94,7 +94,7 @@ router.put('/developer/:id', async (req, res) => {
     //update developer
     try {
         const updateDeveloper = await DeveloperModel.updateOne({ _id: id }, req.body)
-        return res.send("You edited developer with id " + id)
+        return res.status(204).send("You edited developer with id " + id)
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -120,7 +120,7 @@ router.delete('/developer/:id', async (req, res) => {
     //delete developer
     try {
         const deleteDeveloper = await DeveloperModel.deleteOne({ _id: id })
-        return res.send("You deleted developer with id " + id)
+        return res.status(204).send("You deleted developer with id " + id)
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -128,6 +128,3 @@ router.delete('/developer/:id', async (req, res) => {
 })
 
 export default router
-
-//NOTES:
-//FIXME: toLowerCase() przy zapisie (raczej storage.ts przy JSON.stringify, CHYBA)?

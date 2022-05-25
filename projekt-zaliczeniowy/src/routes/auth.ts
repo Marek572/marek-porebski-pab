@@ -5,6 +5,7 @@ const CollectionModel = require('../models/CollectionModel')
 import {registerValidation, loginValidation} from '../validation'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { verifyUser } from '../verifyToken'
 
 router.post('/register', async (req, res) => {
 
@@ -52,7 +53,6 @@ router.post('/register', async (req, res) => {
     }
 })
 
-
 router.post('/login', async (req, res) => {
 
     //validation
@@ -81,12 +81,35 @@ router.post('/login', async (req, res) => {
     res.status(202).send('Logged in')
 })
 
-
 router.put('/logout',  async (req, res) => {
 
-    //FIXME: LOGOUT KONIECZNIE!
-    res.status(404).send('err')
-    // res.send('Logged out')
+    res.status(200).send('Logged out')
+
+})
+
+router.delete('/account', async (req, res) => {
+
+    //user data
+    const {username, password} = req.body
+
+    //check if user exsist
+    const user = await UserModel.findOne({username: username})
+    if(!user)
+        return res.status(400).send(username+' not found')
+
+    //check if pass valid
+    const validPass = await bcrypt.compare(password, user.password)
+    if(!validPass)
+        return res.status(400).send('Invalid password')
+
+    //delete account with collection
+    try {
+        const deleteAccount = await UserModel.deleteOne({username: username})
+        const deleteCollection = await CollectionModel.deleteOne({username: username})
+        return res.send('You successfully deleted your account')
+    } catch (err) {
+        return res.status(400).send(err)
+    }
 
 })
 

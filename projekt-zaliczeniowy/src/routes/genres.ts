@@ -56,7 +56,7 @@ router.post('/genre', async (req, res) => {
     //new genre
     const { genName } = req.body
     const newGenre = new GenreModel({
-        genName: genName
+        genName: genName.toLowerCase()
     })
 
     //check if genre exsist
@@ -93,7 +93,7 @@ router.put('/genre/:id', async (req, res) => {
     //update game
     try {
         const updateGame = await GenreModel.updateOne({ _id: id }, req.body)
-        return res.send("You edited genre with id " + id)
+        return res.status(204).send("You edited genre with id " + id) //no content
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -119,7 +119,7 @@ router.delete('/genre/:id', async (req, res) => {
     //delete genre
     try {
         const deleteGenre = await GenreModel.deleteOne({ _id: id })
-        return res.send("You deleted genre with id " + id)
+        return res.status(204).send("You deleted genre with id " + id)
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -127,9 +127,3 @@ router.delete('/genre/:id', async (req, res) => {
 })
 
 export default router
-
-
-//NOTES:
-//FIXME: zastanowic sie czy na pewno szukac wszystkiego po id a nie po nazwach gatunkow
-//FIXME: toLowerCase() przy zapisie (raczej storage.ts przy JSON.stringify, CHYBA)?
-

@@ -74,14 +74,30 @@ export const publisherValidation = (body) => {
     return schema.validate(body)
 }
 
-export const collectionValidation = (body) => {
+// export const collectionValidation = (body) => {
+//     const schema = Joi.object({
+//         username: Joi.string()
+//             .required(),
+//         visable: Joi.string()
+//             .default(false),
+//         beaten: Joi.array(),
+//         planned: Joi.array()
+//     })
+
+//     return schema.validate(body)
+// }
+
+export const beatenValidation = (body) => {
     const schema = Joi.object({
-        username: Joi.string()
-            .required(),
-        visable: Joi.string()
-            .default(false),
-        beaten: Joi.array(),
-        planned: Joi.array()
+        beaten: Joi.string()
+    })
+
+    return schema.validate(body)
+}
+
+export const plannedValidation = (body) => {
+    const schema = Joi.object({
+        planned: Joi.string()
     })
 
     return schema.validate(body)

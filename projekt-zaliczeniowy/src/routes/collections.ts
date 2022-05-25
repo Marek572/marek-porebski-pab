@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const CollectionModel = require('../models/CollectionModel')
-import { collectionValidation } from '../validation'
+import { beatenValidation, /*collectionValidation,*/ plannedValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
@@ -45,7 +45,7 @@ router.get('/collection/:username', async (req, res) => {
         if (userCollection.visible === true)
             return res.send(userCollection)
         else
-            return res.status(404).send(username + " have private collection") //FIXME: not siur czy status 404
+            return res.status(400).send(username + " have private collection")
     }
     else
         return res.status(404).send(username + " collection not found")
@@ -63,7 +63,7 @@ router.get('/collection', async (req, res) => {
     if (currentUserCollection)
         return res.send(currentUserCollection)
     else
-        return res.status(404).send('Something went wrong')
+        return res.status(400).send('Something went wrong')
 
 })
 
@@ -87,7 +87,7 @@ router.put('/colletion', async (req, res) => {
         }
     }
     else
-        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
+        return res.status(400).send('Something went wrong')
 
 })
 
@@ -102,6 +102,12 @@ router.post('/collection/beaten', async (req, res) => {
 
     //output
     if (currentUserCollection) {
+
+        //beaten validation
+        const { error } = beatenValidation(req.body)
+        console.log(error)
+        if (error)
+            return res.status(400).send(error.details[0].message)
 
         //beaten game data
         const newItem = req.body.beaten
@@ -124,8 +130,7 @@ router.post('/collection/beaten', async (req, res) => {
         }
 
     } else
-        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
-
+        return res.status(400).send('Something went wrong')
 
 })
 
@@ -138,6 +143,12 @@ router.post('/collection/planned', async (req, res) => {
 
     //output
     if (currentUserCollection) {
+
+        //planned validation
+        const { error } = plannedValidation(req.body)
+        console.log(error)
+        if (error)
+            return res.status(400).send(error.details[0].message)
 
         //planned game data
         const newItem = req.body.planned
@@ -160,8 +171,7 @@ router.post('/collection/planned', async (req, res) => {
         }
 
     } else
-        return res.status(404).send('Something went wrong')//FIXME: nwm jaki status
-
+        return res.status(400).send('Something went wrong')
 
 })
 
@@ -197,8 +207,7 @@ router.delete('/collection/beaten', async (req, res) => {
         }
 
     } else
-        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
-
+        return res.status(400).send('Something went wrong')
 
 })
 
@@ -233,8 +242,7 @@ router.delete('/collection/planned', async (req, res) => {
         }
 
     } else
-        return res.status(404).send('Something went wrong') //FIXME: nwm jaki status
-
+        return res.status(400).send('Something went wrong')
 
 })
 

@@ -409,7 +409,9 @@ na kiedys:
 >wyszukiwanie gry o podobnym tytule (/games/game/title/:title; for loop po kazdej literze?)
 >komentarze do gier (opinie czy cos tego typu)
 ================================TODOs & FIXMEs================================
-
-
-
+>hash przy logowaniu wysylac do bazy do obiektu usera w bazie (jakikolwiek ciag znakow) i przy autoryzacji sprawdzac czy ten hash sie zgadza
+>przy logout'cie usuwac hash u usera w DB
+>usuniecie zamiany spacji na _ (w requescie user moze wpisywac gre z haslem)
+>przy spawdzaiu nazwy zamieniac na lowercase'a a nie przy dodawaniu do bazy (zeby to wygladalo estetyczniej)
+>gry o tej samej nawie (teoretycznie) moga isteniec (mimo ze dostanie stajka XD)
 

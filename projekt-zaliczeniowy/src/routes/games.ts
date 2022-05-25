@@ -1,7 +1,11 @@
 const express = require('express')
 const router = express.Router()
 const GameModel = require('../models/GameModel')
+const GenreModel = require('../models/GenreModel')
+const PublisherModel = require('../models/PublisherModel')
 import { gameValidation } from '../validation'
+import { genreValidation } from '../validation'
+import { publisherValidation } from '../validation'
 import { verifyUser } from '../verifyToken'
 
 router.use((req, res, next) => {
@@ -19,7 +23,7 @@ router.get('/', async (req, res) => {
     if (allGames.length > 0)
         return res.send(allGames)
     else
-        return res.status(404).send("Game list is empty")
+        return res.status(404).send("Game list is empty") //ok but no content
 
 })
 
@@ -74,18 +78,18 @@ router.get('/game/title/:title', async (req, res) => {
 
     //find game
     const title = req.params.title
-    const titleSpace = title.replace('_', ' ')
-    const game = await GameModel.findOne({ title: titleSpace })
+    // const titleSpace = title.replace('_', ' ')
+    const game = await GameModel.findOne({ title: title })
 
     //output
     if (game)
         return res.send(game)
     else
-        return res.status(404).send("Game with title " + titleSpace + " not found")
+        return res.status(404).send("Game with title " + title + " not found")
 
 })
 
-// //TODO: POST add few games
+//TODO: POST add few games
 
 //POST add game
 router.post('/game', async (req, res) => {
@@ -95,26 +99,62 @@ router.post('/game', async (req, res) => {
     if (currentUser !== 'admin')
         return res.status(403).send('Access denied')
 
-    //validation
+    //game validation
     const { error } = gameValidation(req.body)
     if (error)
         return res.status(400).send(error.details[0].message)
 
     //new game
     const { title, genres, developer, publisher, releseDate } = req.body
+
+    //add new genres
+    for(let i=0; i<genres.length; i++) {
+        //genre validation
+        const { error } = genreValidation({genName: genres[i]})
+        if (!error){
+            genres[i] = genres[i].toLowerCase()
+            const genreExists = await GenreModel.findOne({genName: genres[i]})
+            if(!genreExists){
+                const newGenre = new GenreModel({
+                    genName: genres[i],
+                })
+                await newGenre.save()
+            }
+        }else{
+            const index = genres.indexOf(genres[i])
+            genres.splice(index, 1)
+        }
+    }
+
+    //add new publishers
+    for(let i=0; i<publisher.length; i++) {
+        //publisher validation
+        const { error } = publisherValidation({pubName: publisher[i]})
+        if (!error){
+            publisher[i] = publisher[i].toLowerCase()
+            const publisherExists = await PublisherModel.findOne({pubName: publisher[i]})
+            if(!publisherExists){
+                const newPublisher = new PublisherModel({
+                    pubName: publisher[i],
+                })
+                await newPublisher.save()
+            }
+        }else{
+            const index = publisher.indexOf(publisher[i])
+            publisher.splice(index, 1)
+        }
+    }
+
     const newGame = new GameModel({
-        title: title,
+        title: title.toLowerCase(),
         genres: genres,
-        developer: developer,
+        developer: developer.toLowerCase(),
         publisher: publisher,
         releseDate: releseDate
     })
 
-    //TODO: if gatunek nie istenieje usun go
-    //TODO: ? gatunek jako obiekt a nie tablica stringow?
-
     //check if game exsist
-    const game = await GameModel.findOne({ title: title })
+    const game = await GameModel.findOne({ title: title.toLowerCase() })
     if (game)
         return res.status(400).send('Game with title ' + title + ' already exists')
 
@@ -146,7 +186,7 @@ router.put('/game/:id', async (req, res) => {
     //update game
     try {
         const updateGame = await GameModel.updateOne({ _id: id }, req.body)
-        return res.send("You edited game with id " + id)
+        return res.status(204).send("You edited game with id " + id) //no content
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -172,7 +212,7 @@ router.delete('/game/:id', async (req, res) => {
     //delete game
     try {
         const deleteGame = await GameModel.deleteOne({ _id: id })
-        return res.send("You deleted game with id " + id)
+        return res.status(204).send("You deleted game with id " + id) //no content
     } catch (err) {
         return res.status(400).send(err)
     }
@@ -180,8 +220,3 @@ router.delete('/game/:id', async (req, res) => {
 })
 
 export default router
-
-
-//NOTES:
-//FIXME: toLowerCase() przy zapisie (raczej storage.ts przy JSON.stringify, CHYBA)?
-//bez toLowerCase() wyszukiwanie po tytule utrudnione (case sensitive)
