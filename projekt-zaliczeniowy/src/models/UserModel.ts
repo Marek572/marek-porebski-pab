@@ -15,6 +15,10 @@ var userSchema = new mongoose.Schema({
         type: String,
         required: true,
         min: 8
+    },
+    hash: {
+        type: String,
+        default: 'expired'
     }
 })
 

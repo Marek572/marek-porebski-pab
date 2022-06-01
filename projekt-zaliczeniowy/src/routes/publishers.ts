@@ -56,7 +56,7 @@ router.post('/publisher', async (req, res) => {
     //new publisher
     const { pubName } = req.body
     const newPublisher = new PublisherModel({
-        pubName: pubName.toLowerCase()
+        pubName: pubName
     })
 
     //check if publisher exsist

@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const UserModel = require('../models/UserModel')
 const CollectionModel = require('../models/CollectionModel')
-import {registerValidation, loginValidation} from '../validation'
+import { registerValidation, loginValidation } from '../validation'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { verifyUser } from '../verifyToken'
@@ -10,22 +10,22 @@ import { verifyUser } from '../verifyToken'
 router.post('/register', async (req, res) => {
 
     //validation
-    const {error} = registerValidation(req.body)
-    if(error)
+    const { error } = registerValidation(req.body)
+    if (error)
         return res.status(400).send(error.details[0].message)
 
     //user data
-    const {username, email, password} = req.body
+    const { username, email, password } = req.body
 
     //check if username exsists
-    const usernameExists = await UserModel.findOne({username: username})
-    if(usernameExists)
-        return res.status(400).send(username+' already exists')
+    const usernameExists = await UserModel.findOne({ username: {'$regex': username,$options:'i'} })
+    if (usernameExists)
+        return res.status(400).send(username + ' already exists')
 
     //check if email exsists
-    const emailExists = await UserModel.findOne({email: email})
-    if(emailExists)
-        return res.status(400).send('User with email: '+email+' already exists')
+    const emailExists = await UserModel.findOne({ email: email })
+    if (emailExists)
+        return res.status(400).send('User with email: ' + email + ' already exists')
 
     //pass encryption
     const salt = await bcrypt.genSalt(15)
@@ -44,11 +44,11 @@ router.post('/register', async (req, res) => {
     })
 
     //save newUser+newCollection
-    try{
+    try {
         const saveUser = await newUser.save()
         const saveCollection = await newCollection.save()
-        res.status(201).send(newUser.username+' successfully registered')
-    }catch(err){
+        res.status(201).send(username + ' successfully registered')
+    } catch (err) {
         res.status(400).send(err)
     }
 })
@@ -56,56 +56,85 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
 
     //validation
-    const {error} = loginValidation(req.body)
-    if(error)
+    const { error } = loginValidation(req.body)
+    if (error)
         return res.status(400).send(res.send(error.details[0].message))
 
     //user data
-    const {username, password} = req.body
+    const { username, password } = req.body
 
     //check if user exsist
-    const user = await UserModel.findOne({username: username})
-    if(!user)
-        return res.status(400).send(username+' not found')
+    const user = await UserModel.findOne({ username: {'$regex': username,$options:'i'} })
+    if (!user)
+        return res.status(400).send(username + ' not found')
 
     //check if pass valid
     const validPass = await bcrypt.compare(password, user.password)
-    if(!validPass)
+    if (!validPass)
         return res.status(400).send('Invalid password')
 
+    //hash
+    const salt = await bcrypt.genSalt()
+    res.locals.hash = salt
+
+    if (user.hash != 'expired')
+        return res.status(400).send('You are already logged in')
+
+    user.hash = salt
+    const hashDb = await user.save()
+
     //token
-    const token = jwt.sign({username}, process.env.TOKEN_SECRET, {expiresIn: '24h'})
+    const token = jwt.sign({ username }, process.env.TOKEN_SECRET, { expiresIn: '24h' })
     console.log(token)
 
     //output
-    res.status(202).send('Logged in')
+    return res.status(202).send('Logged in')
 })
 
-router.put('/logout',  async (req, res) => {
+//FIXME: nie mam na to kompletnie innego pomyslu...
+router.put('/logout', async (req, res) => {
 
-    res.status(200).send('Logged out')
+    //user data
+    const { username, password } = req.body
+
+    //check if user exsist
+    const user = await UserModel.findOne({ username: {'$regex': username,$options:'i'} })
+    if (!user)
+        return res.status(400).send(username + ' not found')
+
+    //check if pass valid
+    const validPass = await bcrypt.compare(password, user.password)
+    if (!validPass)
+        return res.status(400).send('Invalid password')
+
+    if(user.hash == 'expired')
+        return res.status(400).send('error')
+
+    user.hash = 'expired'
+    const hashDb = await user.save()
+    return res.status(200).send('Logged out')
 
 })
 
 router.delete('/account', async (req, res) => {
 
     //user data
-    const {username, password} = req.body
+    const { username, password } = req.body
 
     //check if user exsist
-    const user = await UserModel.findOne({username: username})
-    if(!user)
-        return res.status(400).send(username+' not found')
+    const user = await UserModel.findOne({ username: {'$regex': username,$options:'i'} })
+    if (!user)
+        return res.status(400).send(username + ' not found')
 
     //check if pass valid
     const validPass = await bcrypt.compare(password, user.password)
-    if(!validPass)
+    if (!validPass)
         return res.status(400).send('Invalid password')
 
     //delete account with collection
     try {
-        const deleteAccount = await UserModel.deleteOne({username: username})
-        const deleteCollection = await CollectionModel.deleteOne({username: username})
+        const deleteAccount = await UserModel.deleteOne({ username: username })
+        const deleteCollection = await CollectionModel.deleteOne({ username: username })
         return res.send('You successfully deleted your account')
     } catch (err) {
         return res.status(400).send(err)

@@ -56,8 +56,8 @@ router.post('/developer', async (req, res) => {
     //new developer
     const { devName, founder } = req.body
     const newDeveloper = new DeveloperModel({
-        devName: devName.toLowerCase(),
-        founder: founder.toLowerCase()
+        devName: devName,
+        founder: founder
     })
 
     //check if developer exsists

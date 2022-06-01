@@ -32,8 +32,7 @@ router.get('/genre/:genreName', async (req, res) => {
 
     //find games
     const genre = req.params.genreName
-    const genreSpace = genre.replace('_', ' ')
-    const genreGames = await GameModel.find({ genres: genreSpace })
+    const genreGames = await GameModel.find({ genres: {'$regex': genre,$options:'i'} })
 
     //output
     if (genreGames.length > 0)
@@ -47,8 +46,7 @@ router.get('/developer/:devName', async (req, res) => {
 
     //find games
     const devName = req.params.devName
-    const devNameSpace = devName.replace('_', ' ')
-    const devGames = await GameModel.find({ developer: devNameSpace })
+    const devGames = await GameModel.find({ developer: {'$regex': devName,$options:'i'} })
 
     //output
     if (devGames.length > 0)
@@ -78,8 +76,7 @@ router.get('/game/title/:title', async (req, res) => {
 
     //find game
     const title = req.params.title
-    // const titleSpace = title.replace('_', ' ')
-    const game = await GameModel.findOne({ title: title })
+    const game = await GameModel.find({ title: {'$regex': title,$options:'i'} })
 
     //output
     if (game)
@@ -112,7 +109,6 @@ router.post('/game', async (req, res) => {
         //genre validation
         const { error } = genreValidation({genName: genres[i]})
         if (!error){
-            genres[i] = genres[i].toLowerCase()
             const genreExists = await GenreModel.findOne({genName: genres[i]})
             if(!genreExists){
                 const newGenre = new GenreModel({
@@ -131,7 +127,6 @@ router.post('/game', async (req, res) => {
         //publisher validation
         const { error } = publisherValidation({pubName: publisher[i]})
         if (!error){
-            publisher[i] = publisher[i].toLowerCase()
             const publisherExists = await PublisherModel.findOne({pubName: publisher[i]})
             if(!publisherExists){
                 const newPublisher = new PublisherModel({
@@ -146,17 +141,18 @@ router.post('/game', async (req, res) => {
     }
 
     const newGame = new GameModel({
-        title: title.toLowerCase(),
+        title: title,
         genres: genres,
-        developer: developer.toLowerCase(),
+        developer: developer,
         publisher: publisher,
         releseDate: releseDate
     })
 
+    //teoretycznie nie moze byc tych samych gier
     //check if game exsist
-    const game = await GameModel.findOne({ title: title.toLowerCase() })
-    if (game)
-        return res.status(400).send('Game with title ' + title + ' already exists')
+    // const game = await GameModel.findOne({ title: title })
+    // if (game)
+    //     return res.status(400).send('Game with title ' + title + ' already exists')
 
     //save game
     try {

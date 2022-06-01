@@ -56,7 +56,7 @@ router.post('/genre', async (req, res) => {
     //new genre
     const { genName } = req.body
     const newGenre = new GenreModel({
-        genName: genName.toLowerCase()
+        genName: genName
     })
 
     //check if genre exsist
